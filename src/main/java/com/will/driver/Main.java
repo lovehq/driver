@@ -4,10 +4,17 @@ package com.will.driver;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Scanner;
 
 import okhttp3.HttpUrl;
+import okio.BufferedSource;
+import okio.Source;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -45,13 +52,15 @@ public class Main {
     public static final String RADIO_BUS = "ctl00_ContentPlaceHolder2_radio3";
     public static final String BTN_BOOKING = "ctl00_ContentPlaceHolder2_btnSubmit";
 
+    public static final String SPAN_ERROR = "ctl00_ContentPlaceHolder2_lblInfo";
+
     private static OkHttpClient client = new OkHttpClient();
 
-    private static WebDriver driver;
+    private WebDriver driver;
 
-    private Main() throws IOException {
+    public Main() throws IOException {
         String exePath = "/chromedriver.exe";
-        URL url = Main.class.getResource(exePath);
+        URL url = this.getClass().getResource(exePath);
         System.setProperty("webdriver.chrome.driver", url.getFile());
         driver = new ChromeDriver();
         driver.get("http://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx");
@@ -60,45 +69,78 @@ public class Main {
         }
     }
 
-    private static String getBookingUrl(String date, String time){
+    public static void main(String[] args) throws IOException, InterruptedException {
+        new Main().bookCoach();
+        //System.out.println(getBookingUrl(LocalDateTime.now()));
+    }
+
+    private void bookCoach() throws IOException, InterruptedException {
+        Queue<LocalDateTime> dateTimes = readBookingDates();
+        int size = 0, count = 0;
+        while(true){
+            if(dateTimes.isEmpty()){
+                break;
+            }
+            size = dateTimes.size();
+            LocalDateTime dateTime = dateTimes.poll();
+            boolean booked = false;
+            String url = getBookingUrl(dateTime);
+            driver.navigate().to(url);
+            WebElement bookingBtn = driver.findElement(By.id(BTN_BOOKING));
+            WebElement errorSpan = driver.findElement(By.id(SPAN_ERROR));
+            String errorMsg = errorSpan.getText();
+            System.out.println(bookingBtn.getAttribute("disabled"));
+            if(bookingBtn.getAttribute("disabled") != null
+                && bookingBtn.getAttribute("disabled").equals("true")){
+                System.out.println("Can't book coach in " + dateTime.toString() + ": " + errorMsg);
+            }else{
+                driver.findElement(By.id(RADIO_BUS)).click();
+                bookingBtn = driver.findElement(By.id(BTN_BOOKING));
+                bookingBtn.click();
+                if(driver.getCurrentUrl().equals("http://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx")) {
+                    booked = true;
+                }
+            }
+            if(!booked){
+                dateTimes.offer(dateTime);
+            }
+
+            count++;
+            if(count >= size){
+                count = 0;
+                Thread.sleep(10000);
+            }
+        }
+    }
+
+    private Queue<LocalDateTime> readBookingDates() throws IOException {
+        Queue<LocalDateTime> result = new LinkedList<>();
+        Source source = Okio.source(Main.class.getResourceAsStream("/booking"));
+        BufferedSource bsource = Okio.buffer(source);
+        String dateTime = null;
+        while((dateTime = bsource.readUtf8Line()) != null){
+            result.offer(
+                LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")));
+        }
+        return result;
+    }
+
+    private static String getBookingUrl(LocalDateTime dateTime){
+        String date = dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("uuuu-MM-dd"));
+        String time = dateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HHmm"));
         HttpUrl url = new HttpUrl.Builder().scheme("http")
             .host("t1.ronganjx.com")
             .addPathSegments("Web11/logging/BookingCNStudy.aspx")
             .addQueryParameter("coachName", COACH_ID)
             .addQueryParameter("date", date)
-            .addQueryParameter("beginTime", time).build();
+            .addQueryParameter("beginTime", time)
+            .addQueryParameter("trainType", "%E5%9C%BA%E5%86%85")
+            .addQueryParameter("timeLine", String.valueOf(dateTime.toLocalTime().getHour() + 1))
+            .build();
         return url.toString();
     }
 
-
-    private static void saveImage(String url) throws IOException {
-        Request request = new Request.Builder().url(url).build();
-        Response response = client.newCall(request).execute();
-        byte[] bytes = response.body().bytes();
-        Sink sink = Okio.sink(new File(IMAGE_FILE_PATH));
-        BufferedSink bsink = Okio.buffer(sink);
-        bsink.write(bytes);
-        response.close();
-        bsink.close();
-    }
-
-    private static String inputCaptcha(){
-        Scanner reader = new Scanner(System.in);  // Reading from System.in
-        System.out.println("Enter captcha: ");
-        String result = reader.nextLine();
-        reader.close();
-        return result;
-        //return "env0rkd";
-    }
-
-    private static void acceptAlert(){
-        Wait wait = new WebDriverWait(driver, 10);
-        wait.until(ExpectedConditions.alertIsPresent());
-        Alert alert = driver.switchTo().alert();
-        alert.accept();
-    }
-
-    private static void login() throws IOException {
+    private void login() throws IOException {
 //        List<WebElement> elements = driver.findElements(By.tagName("img"));
 //        WebElement imageEle = null;
 //        for(WebElement element : elements){
@@ -122,65 +164,82 @@ public class Main {
         loginBtn.click();
     }
 
-    private static void selectDate(String date){
-        WebElement trainType = driver.findElement(By.id(SELECT_TRAIN_TYPE));
-        trainType.click();
-        trainType.findElement(By.cssSelector("option:nth-child(2)")).click();
-        acceptAlert();
-
-        WebElement trainDate = driver.findElement(By.id(INPUT_TRAIN_DATE));
-        trainDate.sendKeys(date);
-
-        trainDate.submit();
-    }
-
-    private static void pickTime(String date, String time){
-        String[] keywords = new String[3];
-        keywords[0] = "coachName=9112022172";
-        keywords[1] = "date=" + date;
-        keywords[2] = "beginTime=" + time;
-
-        WebElement coachInfo = driver.findElement(By.id(TABLE_COACH_INFO));
-        WebElement bookLink = null;
-        for(WebElement element : coachInfo.findElements(By.tagName("a"))){
-            String href = element.getAttribute("href");
-            boolean match = true;
-            for(String keyword : keywords){
-                if(!href.contains(keyword)){
-                    match = false;
-                }
-            }
-            if(match){
-                bookLink = element;
-                break;
-            }
-        }
-        if(bookLink == null){
-            System.out.println("No matched booking time found.");
-        }else{
-            bookLink.click();
-        }
-    }
-
-    private static void bookCoach() throws IOException {
-        driver.get("hhttp://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx");
-        if(!driver.getCurrentUrl().equals("http://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx")) {
-            login();
-        }
-        selectDate("2016-10-15");
-        pickTime("2016-10-15", "0700");
-
-        driver.findElement(By.id(RADIO_BUS)).click();
-        driver.findElement(By.id(BTN_BOOKING)).click();
+    private static String inputCaptcha(){
+        Scanner reader = new Scanner(System.in);  // Reading from System.in
+        System.out.println("Enter captcha: ");
+        String result = reader.nextLine();
+        reader.close();
+        return result;
+        //return "env0rkd";
     }
 
 
-    public static void main(String[] args) throws IOException {
-
-
-
-
-
-        //driver.close();
+    private static void saveImage(String url) throws IOException {
+        Request request = new Request.Builder().url(url).build();
+        Response response = client.newCall(request).execute();
+        byte[] bytes = response.body().bytes();
+        Sink sink = Okio.sink(new File(IMAGE_FILE_PATH));
+        BufferedSink bsink = Okio.buffer(sink);
+        bsink.write(bytes);
+        response.close();
+        bsink.close();
     }
+//    private void acceptAlert(){
+//        Wait wait = new WebDriverWait(driver, 10);
+//        wait.until(ExpectedConditions.alertIsPresent());
+//        Alert alert = driver.switchTo().alert();
+//        alert.accept();
+//    }
+//    private void selectDate(String date){
+//        WebElement trainType = driver.findElement(By.id(SELECT_TRAIN_TYPE));
+//        trainType.click();
+//        trainType.findElement(By.cssSelector("option:nth-child(2)")).click();
+//        acceptAlert();
+//
+//        WebElement trainDate = driver.findElement(By.id(INPUT_TRAIN_DATE));
+//        trainDate.sendKeys(date);
+//
+//        trainDate.submit();
+//    }
+//
+//    private void pickTime(String date, String time){
+//        String[] keywords = new String[3];
+//        keywords[0] = "coachName=9112022172";
+//        keywords[1] = "date=" + date;
+//        keywords[2] = "beginTime=" + time;
+//
+//        WebElement coachInfo = driver.findElement(By.id(TABLE_COACH_INFO));
+//        WebElement bookLink = null;
+//        for(WebElement element : coachInfo.findElements(By.tagName("a"))){
+//            String href = element.getAttribute("href");
+//            boolean match = true;
+//            for(String keyword : keywords){
+//                if(!href.contains(keyword)){
+//                    match = false;
+//                }
+//            }
+//            if(match){
+//                bookLink = element;
+//                break;
+//            }
+//        }
+//        if(bookLink == null){
+//            System.out.println("No matched booking time found.");
+//        }else{
+//            bookLink.click();
+//        }
+//    }
+//
+//    private void bookCoach() throws IOException {
+//        driver.get("hhttp://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx");
+//        if(!driver.getCurrentUrl().equals("http://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx")) {
+//            login();
+//        }
+//        selectDate("2016-10-15");
+//        pickTime("2016-10-15", "0700");
+//
+//        driver.findElement(By.id(RADIO_BUS)).click();
+//        driver.findElement(By.id(BTN_BOOKING)).click();
+//    }
+
 }
