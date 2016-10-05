@@ -6,35 +6,32 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.Scanner;
+import java.util.logging.Logger;
 
-import okhttp3.HttpUrl;
-import okio.BufferedSource;
-import okio.Source;
-import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.Wait;
-import org.openqa.selenium.support.ui.WebDriverWait;
 
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okio.BufferedSink;
+import okio.BufferedSource;
 import okio.Okio;
 import okio.Sink;
+import okio.Source;
 
 /**
  * @author Will Sun
  */
 public class Main {
+    public static final Logger logger = Logger.getLogger(Main.class.getName());
+
     public static final String COACH_ID = "9112022172";
 
     private static final String IMAGE_FILE_PATH = Main.class.getResource("/image").getFile() + "/captcha.jpg";
@@ -83,22 +80,23 @@ public class Main {
             }
             size = dateTimes.size();
             LocalDateTime dateTime = dateTimes.poll();
+            logger.info("Try to book: " + dateTime.toString());
             boolean booked = false;
             String url = getBookingUrl(dateTime);
             driver.navigate().to(url);
             WebElement bookingBtn = driver.findElement(By.id(BTN_BOOKING));
             WebElement errorSpan = driver.findElement(By.id(SPAN_ERROR));
             String errorMsg = errorSpan.getText();
-            System.out.println(bookingBtn.getAttribute("disabled"));
             if(bookingBtn.getAttribute("disabled") != null
                 && bookingBtn.getAttribute("disabled").equals("true")){
-                System.out.println("Can't book coach in " + dateTime.toString() + ": " + errorMsg);
+                logger.info("Can't book in " + dateTime.toString() + ": " + errorMsg);
             }else{
                 driver.findElement(By.id(RADIO_BUS)).click();
                 bookingBtn = driver.findElement(By.id(BTN_BOOKING));
                 bookingBtn.click();
                 if(driver.getCurrentUrl().equals("http://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx")) {
                     booked = true;
+                    logger.info("Successfully booked: " + dateTime);
                 }
             }
             if(!booked){
