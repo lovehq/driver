@@ -12,6 +12,7 @@ import java.util.Scanner;
 import java.util.logging.Logger;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -91,7 +92,14 @@ public class Main {
                 && bookingBtn.getAttribute("disabled").equals("true")){
                 logger.info("Can't book in " + dateTime.toString() + ": " + errorMsg);
             }else{
-                driver.findElement(By.id(RADIO_BUS)).click();
+                try{
+                    WebElement radio = driver.findElement(By.id(RADIO_BUS));
+                    if(radio != null){
+                        radio.click();
+                    }
+                }catch (NoSuchElementException elementException){
+                    logger.info("Already selected bus");
+                }
                 bookingBtn = driver.findElement(By.id(BTN_BOOKING));
                 bookingBtn.click();
                 if(driver.getCurrentUrl().equals("http://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx")) {
@@ -106,9 +114,17 @@ public class Main {
             count++;
             if(count >= size){
                 count = 0;
-                Thread.sleep(10000);
+                Thread.sleep(getSleepTime());
             }
         }
+    }
+
+    private long getSleepTime(){
+        LocalDateTime now = LocalDateTime.now();
+        if(now.getHour() == 12 && (now.getMinute() > 25 && now.getMinute() < 40)){
+            return 1000L;
+        }
+        return 10000L;
     }
 
     private Queue<LocalDateTime> readBookingDates() throws IOException {
