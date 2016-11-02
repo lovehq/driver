@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Scanner;
@@ -126,14 +127,35 @@ public class Main {
             }
 
             if(!links.isEmpty()){
+                Iterator<String> it = links.iterator();
+                while(it.hasNext()){
+                    String link = it.next();
+                    logger.info("Try to book: {}", link);
+                    try{
+                        driver.navigate().to(link);
+                        bookCoach();
+                        it.remove();
+                    }catch (Exception e1){
+                        logger.error("Failed to book: {}", link);
+                        e1.printStackTrace();
+                    }
+                }
+
+
                 for(String link : links){
                     logger.info("Try to book: {}", link);
-                    driver.navigate().to(link);
-                    bookCoach();
+                    try{
+                        driver.navigate().to(link);
+                        bookCoach();
+                    }catch (Exception e1){
+                        logger.error("Failed to book: {}", link);
+                        e1.printStackTrace();
+                    }
                 }
             }
         } catch (Exception e) {
-            logger.error("Failed to book: {}", e.getMessage());
+            logger.error("Failed to book");
+            e.printStackTrace();
         }
     }
 
@@ -274,7 +296,7 @@ public class Main {
         String errorMsg = errorSpan.getText();
         if (bookingBtn.getAttribute("disabled") != null
             && bookingBtn.getAttribute("disabled").equals("true")) {
-            logger.info("Failed to book {}: {}", currentUrl, errorMsg);
+            logger.info("Coach not available {}: {}", currentUrl, errorMsg);
         } else {
             try {
                 WebElement radio = driver.findElement(By.id(RADIO_BUS));
