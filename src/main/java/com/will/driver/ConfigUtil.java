@@ -9,6 +9,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedList;
 import java.util.Properties;
 import java.util.Queue;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okio.BufferedSource;
 import okio.Okio;
@@ -54,6 +56,18 @@ public class ConfigUtil {
         bsource.close();
         source.close();
         return result;
+    }
+
+    public static void main(String[] args) {
+        String LINK_REGEX = ".+\"(BookingCWStudy.aspx.+date=(201\\d\\-\\d{2}\\-\\d{2}).*timeLine=(\\d+).*)\".*";
+        String s = "javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(\"ctl00$ContentPlaceHolder2$GridView1$ctl04$ctl00\", \"\", true, \"\", \"BookingCWStudy.aspx?coachName=9113037425&date=2016-11-05&beginTime=1000&trainType=%e5%9c%ba%e5%a4%96&timeLine=11\", false, true))";
+        Pattern pattern = Pattern.compile(LINK_REGEX);
+        Matcher m = pattern.matcher(s);
+        if(m.find()){
+                System.out.println(m.group(1));
+            System.out.println(m.group(2));
+            System.out.println(m.group(3));
+        }
     }
 
 }
