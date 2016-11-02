@@ -118,7 +118,7 @@ public class Main {
                     LocalDate selectDate = LocalDate.parse(m.group(2), DATE_TIME_FORMATTER);
                     if (selectDate.compareTo(localDate) > 0) {
                         int selectTime = Integer.parseInt(m.group(3));
-                        if (selectTime > 14 && selectTime < 18) {
+                        if (selectTime > 13 && selectTime < 19) {
                             links.add("http://t1.ronganjx.com/Web11/logging/" + m.group(1));
                         }
                     }
