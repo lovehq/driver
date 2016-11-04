@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import org.openqa.selenium.Alert;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.UnhandledAlertException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -103,7 +104,9 @@ public class Main {
         LocalDate localDate = LocalDate.now().plusDays(7);
         driver.get("http://t1.ronganjx.com/Web11/logging/BookingCarStudy.aspx");
         try {
-            selectDate(localDate);
+            if(!selectDate(localDate)){
+                return;
+            }
             WebElement tableEle = driver.findElement(By.id(TABLE_COACH_INFO));
             List<WebElement> linkEles = tableEle.findElements(By.cssSelector("td a"));
             if(linkEles.isEmpty()){
@@ -119,7 +122,7 @@ public class Main {
                     LocalDate selectDate = LocalDate.parse(m.group(2), DATE_TIME_FORMATTER);
                     if (selectDate.compareTo(localDate) > 0) {
                         int selectTime = Integer.parseInt(m.group(3));
-                        if (selectTime > 13 && selectTime < 19) {
+                        if (selectTime > ConfigUtil.getMinTime() && selectTime < ConfigUtil.getMaxTime()) {
                             links.add("http://t1.ronganjx.com/Web11/logging/" + m.group(1));
                         }
                     }
@@ -153,8 +156,12 @@ public class Main {
                     }
                 }
             }
-        } catch (Exception e) {
-            logger.error("Failed to book");
+        } catch (UnhandledAlertException e){
+            acceptAlert();
+            return;
+        }
+        catch (Exception e) {
+            logger.error("Unexpected exception:");
             e.printStackTrace();
         }
     }
@@ -179,9 +186,9 @@ public class Main {
     private long getSleepTime() {
         LocalDateTime now = LocalDateTime.now();
         if (now.getHour() == 12 && (now.getMinute() > 25 && now.getMinute() < 40)) {
-            return 1000L;
+            return ConfigUtil.getFastWaitTime();
         }
-        return 10000L;
+        return ConfigUtil.getRegWaitTime();
     }
 
     private static String getBookingUrl(LocalDateTime dateTime) {
@@ -247,8 +254,9 @@ public class Main {
         alert.accept();
     }
 
-    private void selectDate(LocalDate localDate) {
+    private boolean selectDate(LocalDate localDate) {
         String date = localDate.format(DATE_TIME_FORMATTER);
+        logger.info("Select date: {}", date);
         WebElement trainType = driver.findElement(By.id(SELECT_TRAIN_TYPE));
         trainType.click();
         trainType.findElement(By.cssSelector("option:nth-child(3)")).click();
@@ -257,7 +265,13 @@ public class Main {
         WebElement trainDate = driver.findElement(By.id(INPUT_TRAIN_DATE));
         trainDate.sendKeys(date);
 
-        trainDate.submit();
+        try{
+            trainDate.submit();
+        } catch (UnhandledAlertException e){
+            acceptAlert();
+            return false;
+        }
+        return true;
     }
 
     // private void pickTime(String date, String time){

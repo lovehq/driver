@@ -25,6 +25,22 @@ import org.slf4j.LoggerFactory;
 public class ConfigUtil {
     private static final Logger logger = LoggerFactory.getLogger(ConfigUtil.class);
 
+    private static Properties properties;
+
+    static{
+        properties = new Properties();
+        try {
+            properties.load(new FileInputStream("config.properties"));
+        } catch (Exception e) {
+            try{
+                properties.load(ConfigUtil.class.getResourceAsStream("/config.properties"));
+            }catch (Exception e1){
+                logger.error("Can't find config.properties file");
+                throw new RuntimeException(e1.getMessage());
+            }
+        }
+    }
+
     private static Source source;
     private static Queue<LocalDateTime> bookingDates;
 
@@ -56,6 +72,22 @@ public class ConfigUtil {
         bsource.close();
         source.close();
         return result;
+    }
+
+    public static int getMinTime(){
+        return Integer.parseInt((String) properties.getOrDefault("time.min", "13"));
+    }
+
+    public static int getMaxTime(){
+        return Integer.parseInt((String) properties.getOrDefault("time.max", "19"));
+    }
+
+    public static long getRegWaitTime(){
+        return Long.parseLong((String) properties.getOrDefault("wait.reg", "10000"));
+    }
+
+    public static long getFastWaitTime(){
+        return Long.parseLong((String) properties.getOrDefault("wait.fast", "1000"));
     }
 
     public static void main(String[] args) {
