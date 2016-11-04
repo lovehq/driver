@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Scanner;
@@ -112,7 +113,7 @@ public class Main {
             if(linkEles.isEmpty()){
                 logger.info("No available booking time");
             }
-            List<String> links = new ArrayList<>();
+            LinkedList<String> links = new LinkedList<>();
 
             for (WebElement element : linkEles) {
                 String link = element.getAttribute("href");
@@ -123,7 +124,7 @@ public class Main {
                     if (selectDate.compareTo(localDate) > 0) {
                         int selectTime = Integer.parseInt(m.group(3));
                         if (selectTime > ConfigUtil.getMinTime() && selectTime < ConfigUtil.getMaxTime()) {
-                            links.add("http://t1.ronganjx.com/Web11/logging/" + m.group(1));
+                            links.addFirst("http://t1.ronganjx.com/Web11/logging/" + m.group(1));
                         }
                     }
                 }
