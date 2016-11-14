@@ -93,6 +93,7 @@ public class Main {
             Main main = new Main();
             while (true) {
                 main.bookByAvailableTime();
+                //main.bookByDates();
                 Thread.sleep(main.getSleepTime());
             }
         }catch (Exception e){
@@ -112,6 +113,7 @@ public class Main {
             List<WebElement> linkEles = tableEle.findElements(By.cssSelector("td a"));
             if(linkEles.isEmpty()){
                 logger.info("No available booking time");
+                return;
             }
             LinkedList<String> links = new LinkedList<>();
 
@@ -156,6 +158,8 @@ public class Main {
                         e1.printStackTrace();
                     }
                 }
+            }else{
+                logger.info("No matched booking time");
             }
         } catch (UnhandledAlertException e){
             acceptAlert();
@@ -257,7 +261,7 @@ public class Main {
 
     private boolean selectDate(LocalDate localDate) {
         String date = localDate.format(DATE_TIME_FORMATTER);
-        logger.info("Select date: {}", date);
+        //logger.info("Select date: {}", date);
         WebElement trainType = driver.findElement(By.id(SELECT_TRAIN_TYPE));
         trainType.click();
         trainType.findElement(By.cssSelector("option:nth-child(3)")).click();

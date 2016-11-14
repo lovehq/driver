@@ -61,17 +61,17 @@ public class ConfigUtil {
         if(bookingDates != null){
             return bookingDates;
         }
-        Queue<LocalDateTime> result = new LinkedList<>();
+        bookingDates = new LinkedList<>();
         BufferedSource bsource = Okio.buffer(source);
         String dateTime;
         while((dateTime = bsource.readUtf8Line()) != null){
             if(!dateTime.isEmpty()) {
-                result.offer(LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")));
+                bookingDates.offer(LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")));
             }
         }
         bsource.close();
         source.close();
-        return result;
+        return bookingDates;
     }
 
     public static int getMinTime(){
