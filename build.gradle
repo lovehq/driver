@@ -1,0 +1,45 @@
+group 'com.will'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.will.driver.Main'
+    }
+}
+
+dependencies {
+    compile(
+            'org.seleniumhq.selenium:selenium-java:3.0.0-beta4',
+            'org.seleniumhq.selenium:selenium-api:3.0.0-beta4',
+            'org.seleniumhq.selenium:selenium-remote-driver:3.0.0-beta4',
+            'org.seleniumhq.selenium:selenium-chrome-driver:3.0.0-beta4',
+            'com.squareup.okio:okio:1.10.0',
+            'com.squareup.okhttp3:okhttp:3.4.1',
+            'org.apache.logging.log4j:log4j-slf4j-impl:2.7',
+            'org.apache.logging.log4j:log4j-core:2.7',
+            'org.apache.commons:commons-lang3:3.4'
+    )
+    testCompile(
+            'junit:junit:4.11'
+    )
+}
