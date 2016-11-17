@@ -1,23 +1,21 @@
 package com.will.driver;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import okio.BufferedSource;
 import okio.Okio;
 import okio.Source;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Will Sun
@@ -57,21 +55,26 @@ public class ConfigUtil {
         }
     }
 
-    public static synchronized Queue<LocalDateTime> readBookingDates() throws IOException {
-        if(bookingDates != null){
-            return bookingDates;
-        }
-        bookingDates = new LinkedList<>();
-        BufferedSource bsource = Okio.buffer(source);
-        String dateTime;
-        while((dateTime = bsource.readUtf8Line()) != null){
-            if(!dateTime.isEmpty()) {
-                bookingDates.offer(LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")));
+    public static synchronized Queue<LocalDateTime> readBookingDates() {
+        try{
+            if(bookingDates != null){
+                return bookingDates;
             }
+            bookingDates = new LinkedList<>();
+            BufferedSource bsource = Okio.buffer(source);
+            String dateTime;
+            while((dateTime = bsource.readUtf8Line()) != null){
+                if(!dateTime.isEmpty()) {
+                    bookingDates.offer(LocalDateTime.parse(dateTime, DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")));
+                }
+            }
+            bsource.close();
+            source.close();
+            return bookingDates;
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
         }
-        bsource.close();
-        source.close();
-        return bookingDates;
     }
 
     public static int getMinTime(){
@@ -88,6 +91,15 @@ public class ConfigUtil {
 
     public static long getFastWaitTime(){
         return Long.parseLong((String) properties.getOrDefault("wait.fast", "1000"));
+    }
+
+    public static String[] getCoaches(){
+        String coaches = (String) properties.getOrDefault("coach", "9114045123");
+        return coaches.split(",");
+    }
+
+    public static int getBookType(){
+        return (int)properties.getOrDefault("book.type", 0);
     }
 
     public static void main(String[] args) {

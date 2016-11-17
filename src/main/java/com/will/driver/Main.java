@@ -38,7 +38,13 @@ import okhttp3.OkHttpClient;
 public class Main {
     public static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    private static final String COACH_ID = "9214048286";
+    //private static final String COACH_ID = "9114045123"; //9113026133
+
+    private static final String[] coaches = ConfigUtil.getCoaches();
+
+    private static final Queue<LocalDateTime> dateTimes = ConfigUtil.readBookingDates();
+
+    private static final int bookType = ConfigUtil.getBookType();
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -92,14 +98,16 @@ public class Main {
         try{
             Main main = new Main();
             while (true) {
-                main.bookByAvailableTime();
-                //main.bookByDates();
+                if(bookType == 0){
+                    main.bookByAvailableTime();
+                }else{
+                    main.bookByDates();
+                }
                 Thread.sleep(main.getSleepTime());
             }
         }catch (Exception e){
             driver.close();
         }
-
     }
 
     private void bookByAvailableTime() {
@@ -172,17 +180,19 @@ public class Main {
     }
 
     private void bookByDates() throws IOException, InterruptedException {
+        if (dateTimes == null || dateTimes.isEmpty()) {
+            return;
+        }
         try {
-            Queue<LocalDateTime> dateTimes = ConfigUtil.readBookingDates();
-            for (LocalDateTime dateTime : dateTimes) {
-                if (dateTimes.isEmpty()) {
-                    return;
+            for(String coach : coaches){
+                for (LocalDateTime dateTime : dateTimes) {
+                    logger.info("Try to book {}: {}", coach, dateTime.toString());
+                    String url = getBookingUrl(dateTime, coach);
+                    driver.navigate().to(url);
+                    bookCoach();
                 }
-                logger.info("Try to book: " + dateTime.toString());
-                String url = getBookingUrl(dateTime);
-                driver.navigate().to(url);
-                bookCoach();
             }
+
         } catch (Exception e) {
             logger.error("Failed to book: {}", e.getMessage());
         }
@@ -196,12 +206,13 @@ public class Main {
         return ConfigUtil.getRegWaitTime();
     }
 
-    private static String getBookingUrl(LocalDateTime dateTime) {
+    private static String getBookingUrl(LocalDateTime dateTime, String coach) {
         String date = dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("uuuu-MM-dd"));
         String time = dateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HHmm"));
         HttpUrl url = new HttpUrl.Builder().scheme("http").host("t1.ronganjx.com")
             .addPathSegments("Web11/logging/BookingCWStudy.aspx")
-            .addQueryParameter("coachName", COACH_ID).addQueryParameter("date", date)
+            .addQueryParameter("coachName", coach)
+            .addQueryParameter("date", date)
             .addQueryParameter("beginTime", time)
             .addQueryParameter("trainType", "%E5%9C%BA%E5%A4%96")
             .addQueryParameter("timeLine", String.valueOf(dateTime.toLocalTime().getHour() + 1))
