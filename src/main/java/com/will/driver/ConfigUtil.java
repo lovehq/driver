@@ -1,10 +1,15 @@
 package com.will.driver;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
 import java.util.regex.Matcher;
@@ -77,6 +82,40 @@ public class ConfigUtil {
         }
     }
 
+    private static Source coachSource;
+    private static Map<String, String> allCoaches;
+    static{
+        try {
+            coachSource = Okio.source(ConfigUtil.class.getResourceAsStream("/coaches.txt"));
+        } catch (Exception e) {
+            logger.error("Can't find coaches.txt file");
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public static synchronized Map<String, String> getAllCoaches() {
+        try{
+            if(allCoaches != null){
+                return allCoaches;
+            }
+            allCoaches = new LinkedHashMap<>();
+            BufferedSource bsource = Okio.buffer(coachSource);
+            String coach;
+            while((coach = bsource.readUtf8Line()) != null){
+                if(!coach.isEmpty()) {
+                    String[] ss = coach.split(":");
+                    allCoaches.put(ss[0], ss[1]);
+                }
+            }
+            bsource.close();
+            coachSource.close();
+            return allCoaches;
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public static int getMinTime(){
         return Integer.parseInt((String) properties.getOrDefault("time.min", "13"));
     }
@@ -99,19 +138,20 @@ public class ConfigUtil {
     }
 
     public static int getBookType(){
-        return (int)properties.getOrDefault("book.type", 0);
+        return Integer.parseInt((String)properties.getOrDefault("book.type", "0"));
     }
 
     public static void main(String[] args) {
-        String LINK_REGEX = ".+\"(BookingCWStudy.aspx.+date=(201\\d\\-\\d{2}\\-\\d{2}).*timeLine=(\\d+).*)\".*";
-        String s = "javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(\"ctl00$ContentPlaceHolder2$GridView1$ctl04$ctl00\", \"\", true, \"\", \"BookingCWStudy.aspx?coachName=9113037425&date=2016-11-05&beginTime=1000&trainType=%e5%9c%ba%e5%a4%96&timeLine=11\", false, true))";
-        Pattern pattern = Pattern.compile(LINK_REGEX);
-        Matcher m = pattern.matcher(s);
-        if(m.find()){
-                System.out.println(m.group(1));
-            System.out.println(m.group(2));
-            System.out.println(m.group(3));
-        }
+//        String LINK_REGEX = ".+\"(BookingCWStudy.aspx.+date=(201\\d\\-\\d{2}\\-\\d{2}).*timeLine=(\\d+).*)\".*";
+//        String s = "javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(\"ctl00$ContentPlaceHolder2$GridView1$ctl04$ctl00\", \"\", true, \"\", \"BookingCWStudy.aspx?coachName=9113037425&date=2016-11-05&beginTime=1000&trainType=%e5%9c%ba%e5%a4%96&timeLine=11\", false, true))";
+//        Pattern pattern = Pattern.compile(LINK_REGEX);
+//        Matcher m = pattern.matcher(s);
+//        if(m.find()){
+//                System.out.println(m.group(1));
+//            System.out.println(m.group(2));
+//            System.out.println(m.group(3));
+//        }
+        System.out.println(getAllCoaches());
     }
 
 }
