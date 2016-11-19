@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,6 +46,9 @@ public class Main {
     private static final Queue<LocalDateTime> dateTimes = ConfigUtil.readBookingDates();
 
     private static final Map<String, String> allCoaches = ConfigUtil.getAllCoaches();
+
+    private static final String host = ConfigUtil.getHost();
+    private static final String baseUrl = "http://" + host + "/Web11/logging/";
 
     private static final int bookType = ConfigUtil.getBookType();
 
@@ -91,9 +93,9 @@ public class Main {
     }
 
     public Main() throws IOException {
-        driver.get("http://t2.ronganjx.com/Web11/logging/BookingCarStudy.aspx");
+        driver.get(baseUrl + "BookingCarStudy.aspx");
         if (!driver.getCurrentUrl()
-            .equals("http://t2.ronganjx.com/Web11/logging/BookingCarStudy.aspx")) {
+            .equals(baseUrl + "BookingCarStudy.aspx")) {
             login();
         }
     }
@@ -118,6 +120,7 @@ public class Main {
 //            main.findAllAvilableDates(LocalDate.of(2016, 12, 1));
 //            main.findAllAvilableDates(LocalDate.of(2016, 12, 2));
 //            main.findAllAvilableDates(LocalDate.of(2016, 12, 3));
+//            main.findAllAvilableDates(LocalDate.of(2016, 12, 4));
         }catch (Exception e){
             driver.close();
         }
@@ -126,7 +129,7 @@ public class Main {
 
     private void bookByAvailableTime() {
         LocalDate localDate = LocalDate.now().plusDays(7);
-        driver.get("http://t2.ronganjx.com/Web11/logging/BookingCarStudy.aspx");
+        driver.get(baseUrl + "BookingCarStudy.aspx");
         try {
             if(!selectDate(localDate)){
                 return;
@@ -148,7 +151,7 @@ public class Main {
                     if (selectDate.compareTo(localDate) > 0) {
                         int selectTime = Integer.parseInt(m.group(3));
                         if (selectTime > ConfigUtil.getMinTime() && selectTime < ConfigUtil.getMaxTime()) {
-                            links.addFirst("http://t2.ronganjx.com/Web11/logging/" + m.group(1));
+                            links.addFirst(baseUrl + m.group(1));
                         }
                     }
                 }
@@ -249,7 +252,7 @@ public class Main {
     private static String getBookingUrl(LocalDateTime dateTime, String coach) {
         String date = dateTime.toLocalDate().format(DateTimeFormatter.ofPattern("uuuu-MM-dd"));
         String time = dateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HHmm"));
-        HttpUrl url = new HttpUrl.Builder().scheme("http").host("t2.ronganjx.com")
+        HttpUrl url = new HttpUrl.Builder().scheme("http").host(host)
             .addPathSegments("Web11/logging/BookingCWStudy.aspx")
             .addQueryParameter("coachName", coach)
             .addQueryParameter("date", date)
@@ -379,7 +382,7 @@ public class Main {
             bookingBtn = driver.findElement(By.id(BTN_BOOKING));
             bookingBtn.click();
             if (driver.getCurrentUrl()
-                .equals("http://t2.ronganjx.com/Web11/logging/BookingCarStudy.aspx")) {
+                .equals(baseUrl + "BookingCarStudy.aspx")) {
                 booked = true;
                 logger.info("Success booked: {}", currentUrl);
             }
