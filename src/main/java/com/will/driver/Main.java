@@ -111,8 +111,7 @@ public class Main {
                 }
                 Thread.sleep(main.getSleepTime());
             }
-//            main.findAllAvilableDates(LocalDate.of(2016, 11, 25));
-//            main.findAllAvilableDates(LocalDate.of(2016, 11, 26));
+
 //            main.findAllAvilableDates(LocalDate.of(2016, 11, 27));
 //            main.findAllAvilableDates(LocalDate.of(2016, 11, 28));
 //            main.findAllAvilableDates(LocalDate.of(2016, 11, 29));
@@ -147,13 +146,13 @@ public class Main {
                 Pattern pattern = Pattern.compile(LINK_REGEX);
                 Matcher m = pattern.matcher(link);
                 if (m.find()) {
-                    LocalDate selectDate = LocalDate.parse(m.group(2), DATE_TIME_FORMATTER);
-                    if (selectDate.compareTo(localDate) > 0) {
+//                    LocalDate selectDate = LocalDate.parse(m.group(2), DATE_TIME_FORMATTER);
+//                    if (selectDate.compareTo(localDate) > 0) {
                         int selectTime = Integer.parseInt(m.group(3));
                         if (selectTime > ConfigUtil.getMinTime() && selectTime < ConfigUtil.getMaxTime()) {
                             links.addFirst(baseUrl + m.group(1));
                         }
-                    }
+//                    }
                 }
             }
 
@@ -379,6 +378,8 @@ public class Main {
             } catch (NoSuchElementException elementException) {
                 logger.info("Already selected bus");
             }
+            Wait wait = new WebDriverWait(driver, 10);
+            wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("ctl00_ContentPlaceHolder2_times")));
             bookingBtn = driver.findElement(By.id(BTN_BOOKING));
             bookingBtn.click();
             if (driver.getCurrentUrl()
