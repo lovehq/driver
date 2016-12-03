@@ -55,7 +55,7 @@ public class Main {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
         DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    private static final String LINK_REGEX = ".+\"(BookingCWStudy.aspx.+date=(201\\d\\-\\d{2}\\-\\d{2}).*timeLine=(\\d+).*)\".*";
+    private static final String LINK_REGEX = ".+\"(Booking.*\\.aspx.+date=(201\\d\\-\\d{2}\\-\\d{2}).*timeLine=(\\d+).*)\".*";
 
     // private static final String IMAGE_FILE_PATH = Main.class.getResource("/image").getFile() +
     // "/captcha.jpg";
@@ -76,7 +76,9 @@ public class Main {
 
     public static final String SPAN_ERROR = "ctl00_ContentPlaceHolder2_lblInfo";
 
-    private static OkHttpClient client = new OkHttpClient();
+    public static final String BTN_ADD = "ctl00_ContentPlaceHolder2_btnAdd";
+
+    //private static OkHttpClient client = new OkHttpClient();
 
     private static WebDriver driver;
 
@@ -105,29 +107,21 @@ public class Main {
             Main main = new Main();
             while (true) {
                 if(bookType == 0){
-                    main.bookByAvailableTime();
-                }else{
+                    main.bookByAvailableTime(LocalDate.now().plusDays(7));
+                }else if(bookType == 1){
                     main.bookByDates();
+                }else if(bookType == 2){
+                    main.bookHeavyCar();
                 }
                 Thread.sleep(main.getSleepTime());
             }
-
-//            main.findAllAvilableDates(LocalDate.of(2016, 11, 27));
-//            main.findAllAvilableDates(LocalDate.of(2016, 11, 28));
-//            main.findAllAvilableDates(LocalDate.of(2016, 11, 29));
-//            main.findAllAvilableDates(LocalDate.of(2016, 11, 30));
-//            main.findAllAvilableDates(LocalDate.of(2016, 12, 1));
-//            main.findAllAvilableDates(LocalDate.of(2016, 12, 2));
-//            main.findAllAvilableDates(LocalDate.of(2016, 12, 3));
-//            main.findAllAvilableDates(LocalDate.of(2016, 12, 4));
         }catch (Exception e){
             driver.close();
         }
         driver.close();
     }
 
-    private void bookByAvailableTime() {
-        LocalDate localDate = LocalDate.now().plusDays(7);
+    private void bookByAvailableTime(LocalDate localDate) {
         driver.get(baseUrl + "BookingCarStudy.aspx");
         try {
             if(!selectDate(localDate)){
@@ -136,7 +130,7 @@ public class Main {
             WebElement tableEle = driver.findElement(By.id(TABLE_COACH_INFO));
             List<WebElement> linkEles = tableEle.findElements(By.cssSelector("td a"));
             if(linkEles.isEmpty()){
-                logger.info("No available booking time");
+                logger.info("No available booking time: {}", localDate.toString() );
                 return;
             }
             LinkedList<String> links = new LinkedList<>();
@@ -146,13 +140,10 @@ public class Main {
                 Pattern pattern = Pattern.compile(LINK_REGEX);
                 Matcher m = pattern.matcher(link);
                 if (m.find()) {
-//                    LocalDate selectDate = LocalDate.parse(m.group(2), DATE_TIME_FORMATTER);
-//                    if (selectDate.compareTo(localDate) > 0) {
-                        int selectTime = Integer.parseInt(m.group(3));
-                        if (selectTime > ConfigUtil.getMinTime() && selectTime < ConfigUtil.getMaxTime()) {
-                            links.addFirst(baseUrl + m.group(1));
-                        }
-//                    }
+                    int selectTime = Integer.parseInt(m.group(3));
+                    if (selectTime > ConfigUtil.getMinTime() && selectTime < ConfigUtil.getMaxTime()) {
+                        links.addFirst(baseUrl + m.group(1));
+                    }
                 }
             }
 
@@ -183,7 +174,7 @@ public class Main {
                     }
                 }
             }else{
-                logger.info("No matched booking time");
+                logger.info("No matched booking time {}", localDate.toString());
             }
         } catch (UnhandledAlertException e){
             acceptAlert();
@@ -192,6 +183,20 @@ public class Main {
         catch (Exception e) {
             logger.error("Unexpected exception:");
             e.printStackTrace();
+        }
+    }
+
+    private void bookHeavyCar() throws InterruptedException {
+        LocalDate fromDate = LocalDate.of(2016, 12, 9);
+        LocalDate toDate = LocalDate.of(2016, 12, 17);
+        while(fromDate.isBefore(toDate)){
+            if(fromDate.getDayOfMonth() == 10 || fromDate.getDayOfMonth() == 12){
+                fromDate = fromDate.plusDays(1);
+                continue;
+            }
+            bookByAvailableTime(fromDate);
+            fromDate = fromDate.plusDays(1);
+            Thread.sleep(1000L);
         }
     }
 
@@ -380,6 +385,15 @@ public class Main {
             }
             Wait wait = new WebDriverWait(driver, 10);
             wait.until(ExpectedConditions.invisibilityOfElementLocated(By.id("ctl00_ContentPlaceHolder2_times")));
+
+//            try {
+//                WebElement addBtn = driver.findElement(By.id(BTN_ADD));
+//                if(addBtn != null){
+//                    addBtn.click();
+//                }
+//            }catch (Exception e){}
+
+
             bookingBtn = driver.findElement(By.id(BTN_BOOKING));
             bookingBtn.click();
             if (driver.getCurrentUrl()
