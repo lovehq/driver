@@ -322,8 +322,8 @@ public class Main {
         //logger.info("Select date: {}", date);
         WebElement trainType = driver.findElement(By.id(SELECT_TRAIN_TYPE));
         trainType.click();
-        trainType.findElement(By.cssSelector("option:nth-child(3)")).click();
-        acceptAlert();
+        trainType.findElement(By.cssSelector("option:nth-child(" + ConfigUtil.getSelectIndex() + ")")).click();
+            acceptAlert();
 
         WebElement trainDate = driver.findElement(By.id(INPUT_TRAIN_DATE));
         trainDate.sendKeys(date);

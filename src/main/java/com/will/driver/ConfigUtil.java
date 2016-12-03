@@ -145,6 +145,10 @@ public class ConfigUtil {
         return (String) properties.getOrDefault("host", "t1.ronganjx.com");
     }
 
+    public static String getSelectIndex(){
+        return (String) properties.getOrDefault("select.index", "3");
+    }
+
     public static void main(String[] args) {
 //        String LINK_REGEX = ".+\"(BookingCWStudy.aspx.+date=(201\\d\\-\\d{2}\\-\\d{2}).*timeLine=(\\d+).*)\".*";
 //        String s = "javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(\"ctl00$ContentPlaceHolder2$GridView1$ctl04$ctl00\", \"\", true, \"\", \"BookingCWStudy.aspx?coachName=9113037425&date=2016-11-05&beginTime=1000&trainType=%e5%9c%ba%e5%a4%96&timeLine=11\", false, true))";
